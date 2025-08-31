@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>High-Tech Rangli Kalendar</title>
+<style>
+:root {
+  --bg-dark: #0f0f1f;
+  --text-dark: #e0e0e0;
+  --primary-dark: #00ffff;
+  --red: #ff4d4d;
+  --green: #4dff88;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  transition: background 0.3s, color 0.3s;
+}
+
+h2 {
+  color: var(--primary-dark);
+  text-shadow: 0 0 10px var(--primary-dark);
+}
+
+.controls {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+select, button {
+  background: #1a1a2e;
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-dark);
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 0 15px #00ffff44;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #222;
+  text-align: center;
+  padding: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+  user-select: none;
+}
+
+th {
+  background: #111;
+  color: var(--primary-dark);
+  font-weight: bold;
+}
+
+td:hover {
+  background: #222;
+}
+
+.selected {
+  border: 2px solid #ff00ff;
+  box-shadow: 0 0 10px #ff00ff;
+}
+
+.red {
+  background-color: var(--red);
+  color: white;
+  box-shadow: 0 0 5px #ff0000;
+}
+
+.green {
+  background-color: var(--green);
+  color: white;
+  box-shadow: 0 0 5px #00ff00;
+}
+</style>
+</head>
+<body>
+
+<h2>High-Tech Rangli Kalendar</h2>
+
+<div class="controls">
+  <label for="month">Oy: </label>
+  <select id="month"></select>
+  <label for="year">Yil: </label>
+  <select id="year"></select>
+  <button id="toggleTheme">Light/Dark</button>
+</div>
+
+<table id="calendar">
+  <thead>
+    <tr>
+      <th>Du</th><th>Se</th><th>Ch</th><th>Pa</th><th>Ju</th><th>Sh</th><th>Ya</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const monthSelect = document.getElementById('month');
+const yearSelect = document.getElementById('year');
+const calendarBody = document.querySelector('#calendar tbody');
+const toggleBtn = document.getElementById('toggleTheme');
+const months = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+
+for(let i=0; i<12; i++){
+  const option = document.createElement('option');
+  option.value = i;
+  option.textContent = months[i];
+  monthSelect.appendChild(option);
+}
+
+const currentYear = new Date().getFullYear();
+for(let y=currentYear-5; y<=currentYear+5; y++){
+  const option = document.createElement('option');
+  option.value = y;
+  option.textContent = y;
+  yearSelect.appendChild(option);
+}
+
+let baseDate = null;
+let isDark = true;
+
+function generateCalendar(month, year){
+  calendarBody.innerHTML = '';
+  const firstDay = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month+1, 0).getDate();
+  let row = document.createElement('tr');
+  let dayCount = 1;
+
+  for(let i=0;i<firstDay;i++) row.appendChild(document.createElement('td'));
+
+  for(let i=firstDay;i<7;i++){
+    const cell = document.createElement('td');
+    cell.textContent = dayCount;
+    cell.dataset.date = new Date(year, month, dayCount).toISOString();
+    cell.addEventListener('click', () => selectDate(cell));
+    row.appendChild(cell);
+    dayCount++;
+  }
+  calendarBody.appendChild(row);
+
+  while(dayCount<=lastDate){
+    row = document.createElement('tr');
+    for(let i=0;i<7;i++){
+      const cell = document.createElement('td');
+      if(dayCount<=lastDate){
+        cell.textContent = dayCount;
+        cell.dataset.date = new Date(year, month, dayCount).toISOString();
+        cell.addEventListener('click', () => selectDate(cell));
+        dayCount++;
+      }
+      row.appendChild(cell);
+    }
+    calendarBody.appendChild(row);
+  }
+
+  if(baseDate) highlightRanges();
+}
+
+function selectDate(cell){
+  document.querySelectorAll('#calendar td').forEach(td => td.classList.remove('selected','red','green'));
+  cell.classList.add('selected');
+  baseDate = new Date(cell.dataset.date);
+  highlightRanges();
+}
+
+function highlightRanges(){
+  if(!baseDate) return;
+  const allCells = document.querySelectorAll('#calendar td');
+  allCells.forEach(td => td.classList.remove('red','green'));
+  allCells.forEach(td => {
+    const tdDate = new Date(td.dataset.date);
+    const diffDays = Math.floor((tdDate - baseDate)/(1000*60*60*24));
+    if(diffDays>=0){
+      const cycle = Math.floor(diffDays/4);
+      if(cycle%2===0) td.classList.add('red');
+      else td.classList.add('green');
+    }
+  });
+}
+
+// Dastlabki holat
+monthSelect.value = new Date().getMonth();
+yearSelect.value = currentYear;
+generateCalendar(monthSelect.value, yearSelect.value);
+
+// Oy yoki yil o‘zgarganda
+monthSelect.addEventListener('change', ()=>generateCalendar(parseInt(monthSelect.value), parseInt(yearSelect.value)));
+yearSelect.addEventListener('change', ()=>generateCalendar(parseInt(monthSelect.value), parseInt(yearSelect.value)));
+
+// Tema toggle
+toggleBtn.addEventListener('click', ()=>{
+  if(isDark){
+    document.body.style.background='#f5f5f5';
+    document.body.style.color='#111';
+    isDark=false;
+  } else {
+    document.body.style.background='var(--bg-dark)';
+    document.body.style.color='var(--text-dark)';
+    isDark=true;
+  }
+});
+
+</script>
+</body>
+</html>
